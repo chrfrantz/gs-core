@@ -39,6 +39,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.graphstream.graph.CompoundAttribute;
+import org.graphstream.graph.DynamicValue;
 import org.graphstream.graph.Element;
 import org.graphstream.graph.NullAttributeException;
 
@@ -57,13 +58,13 @@ import org.graphstream.graph.NullAttributeException;
 public abstract class AbstractElement implements Element {
 	// Attribute
 
-//	protected static Set<String> emptySet = new HashSet<String>();
-	
+	// protected static Set<String> emptySet = new HashSet<String>();
+
 	/**
 	 * Tag of this element.
 	 */
 	private String id;
-	
+
 	/**
 	 * The index of this element.
 	 */
@@ -93,15 +94,16 @@ public abstract class AbstractElement implements Element {
 	public String getId() {
 		return id;
 	}
-	
+
 	public int getIndex() {
 		return index;
 	}
-	
+
 	/**
 	 * Used by subclasses to change the index of an element
 	 * 
-	 * @param index the new index
+	 * @param index
+	 *            the new index
 	 */
 	protected void setIndex(int index) {
 		this.index = index;
@@ -120,8 +122,26 @@ public abstract class AbstractElement implements Element {
 	protected abstract String myGraphId(); // XXX
 
 	protected abstract long newEvent(); // XXX
-	
-	protected abstract boolean nullAttributesAreErrors();	// XXX
+
+	protected abstract boolean nullAttributesAreErrors(); // XXX
+
+	protected Object internalGetAttribute(String key, boolean check) {
+		if (attributes != null) {
+			Object value = attributes.get(key);
+
+			if (value != null) {
+				if (value instanceof DynamicValue<?>)
+					value = ((DynamicValue<?>) value).get();
+
+				return value;
+			}
+		}
+
+		if (check && nullAttributesAreErrors())
+			throw new NullAttributeException(key);
+
+		return null;
+	}
 
 	/**
 	 * @complexity O(log(n)) with n being the number of attributes of this
@@ -130,17 +150,8 @@ public abstract class AbstractElement implements Element {
 	// public Object getAttribute( String key )
 	@SuppressWarnings("all")
 	public <T> T getAttribute(String key) {
-		if (attributes != null) {
-			T value = (T) attributes.get(key);
-			
-			if (value != null)
-				return value;
-		}
-
-		if (nullAttributesAreErrors())
-			throw new NullAttributeException(key);
-
-		return null;
+		T value = (T) internalGetAttribute(key, true);
+		return value;
 	}
 
 	/**
@@ -152,19 +163,20 @@ public abstract class AbstractElement implements Element {
 	public <T> T getFirstAttributeOf(String... keys) {
 		Object o = null;
 
-		if (attributes != null) {
-			for (String key : keys) {
-				o = attributes.get(key);
+		if (attributes == null)
+			return null;
 
-				if (o != null)
-					return (T) o;
-			}
+		for (String key : keys) {
+			o = internalGetAttribute(key, false);
+
+			if (o != null)
+				return (T) o;
 		}
 
-		if(o==null && nullAttributesAreErrors())
+		if (nullAttributesAreErrors())
 			throw new NullAttributeException();
-		
-		return (T) o;
+
+		return null;
 	}
 
 	/**
@@ -174,15 +186,10 @@ public abstract class AbstractElement implements Element {
 	// public Object getAttribute( String key, Class<?> clazz )
 	@SuppressWarnings("all")
 	public <T> T getAttribute(String key, Class<T> clazz) {
-		if (attributes != null) {
-			Object o = attributes.get(key);
+		Object o = internalGetAttribute(key, true);
 
-			if (o != null && clazz.isInstance(o))
-				return (T) o;
-		}
-
-		if (nullAttributesAreErrors())
-			throw new NullAttributeException(key);
+		if (o != null && clazz.isInstance(o))
+			return (T) o;
 
 		return null;
 	}
@@ -200,7 +207,7 @@ public abstract class AbstractElement implements Element {
 			return null;
 
 		for (String key : keys) {
-			o = attributes.get(key);
+			o = internalGetAttribute(key, false);
 
 			if (o != null && clazz.isInstance(o))
 				return (T) o;
@@ -217,17 +224,7 @@ public abstract class AbstractElement implements Element {
 	 *             element.
 	 */
 	public CharSequence getLabel(String key) {
-		if (attributes != null) {
-			Object o = attributes.get(key);
-
-			if (o != null && o instanceof CharSequence)
-				return (CharSequence) o;
-		}
-
-		if (nullAttributesAreErrors())
-			throw new NullAttributeException(key);
-
-		return null;
+		return getAttribute(key, CharSequence.class);
 	}
 
 	/**
@@ -236,23 +233,20 @@ public abstract class AbstractElement implements Element {
 	 */
 	public double getNumber(String key) {
 		if (attributes != null) {
-			Object o = attributes.get(key);
+			Object o = internalGetAttribute(key, true);
 
-			if (o != null ) {
+			if (o != null) {
 				if (o instanceof Number)
 					return ((Number) o).doubleValue();
-				
+
 				if (o instanceof String) {
 					try {
-						return Double.parseDouble((String)o);
-					} catch(NumberFormatException e) {
+						return Double.parseDouble((String) o);
+					} catch (NumberFormatException e) {
 					}
 				}
 			}
 		}
-
-		if (nullAttributesAreErrors())
-			throw new NullAttributeException(key);
 
 		return Double.NaN;
 	}
@@ -263,17 +257,7 @@ public abstract class AbstractElement implements Element {
 	 */
 	@SuppressWarnings("unchecked")
 	public ArrayList<? extends Number> getVector(String key) {
-		if (attributes != null) {
-			Object o = attributes.get(key);
-
-			if (o != null && o instanceof ArrayList)
-				return ((ArrayList<? extends Number>) o);
-		}
-
-		if (nullAttributesAreErrors())
-			throw new NullAttributeException(key);
-
-		return null;
+		return getAttribute(key, ArrayList.class);
 	}
 
 	/**
@@ -281,17 +265,7 @@ public abstract class AbstractElement implements Element {
 	 *             element.
 	 */
 	public Object[] getArray(String key) {
-		if (attributes != null) {
-			Object o = attributes.get(key);
-
-			if (o != null && o instanceof Object[])
-				return ((Object[]) o);
-		}
-
-		if (nullAttributesAreErrors())
-			throw new NullAttributeException(key);
-
-		return null;
+		return getAttribute(key, Object[].class);
 	}
 
 	/**
@@ -299,19 +273,14 @@ public abstract class AbstractElement implements Element {
 	 *             element.
 	 */
 	public HashMap<?, ?> getHash(String key) {
-		if (attributes != null) {
-			Object o = attributes.get(key);
+		Object o = internalGetAttribute(key, true);
 
-			if (o != null) {
-				if (o instanceof HashMap<?, ?>)
-					return ((HashMap<?, ?>) o);
-				if (o instanceof CompoundAttribute)
-					return ((CompoundAttribute) o).toHashMap();
-			}
+		if (o != null) {
+			if (o instanceof HashMap<?, ?>)
+				return ((HashMap<?, ?>) o);
+			if (o instanceof CompoundAttribute)
+				return ((CompoundAttribute) o).toHashMap();
 		}
-
-		if (nullAttributesAreErrors())
-			throw new NullAttributeException(key);
 
 		return null;
 	}
@@ -333,7 +302,7 @@ public abstract class AbstractElement implements Element {
 	 */
 	public boolean hasAttribute(String key, Class<?> clazz) {
 		if (attributes != null) {
-			Object o = attributes.get(key);
+			Object o = internalGetAttribute(key, false);
 
 			if (o != null)
 				return (clazz.isInstance(o));
@@ -347,12 +316,10 @@ public abstract class AbstractElement implements Element {
 	 *             element.
 	 */
 	public boolean hasLabel(String key) {
-		if (attributes != null) {
-			Object o = attributes.get(key);
+		Object o = internalGetAttribute(key, false);
 
-			if (o != null)
-				return (o instanceof CharSequence);
-		}
+		if (o != null)
+			return (o instanceof CharSequence);
 
 		return false;
 	}
@@ -362,12 +329,10 @@ public abstract class AbstractElement implements Element {
 	 *             element.
 	 */
 	public boolean hasNumber(String key) {
-		if (attributes != null) {
-			Object o = attributes.get(key);
+		Object o = internalGetAttribute(key, false);
 
-			if (o != null)
-				return (o instanceof Number);
-		}
+		if (o != null)
+			return (o instanceof Number);
 
 		return false;
 	}
@@ -377,12 +342,10 @@ public abstract class AbstractElement implements Element {
 	 *             element.
 	 */
 	public boolean hasVector(String key) {
-		if (attributes != null) {
-			Object o = attributes.get(key);
+		Object o = internalGetAttribute(key, false);
 
-			if (o != null && o instanceof ArrayList<?>)
-				return true;
-		}
+		if (o != null && o instanceof ArrayList<?>)
+			return true;
 
 		return false;
 	}
@@ -392,12 +355,10 @@ public abstract class AbstractElement implements Element {
 	 *             element.
 	 */
 	public boolean hasArray(String key) {
-		if (attributes != null) {
-			Object o = attributes.get(key);
+		Object o = internalGetAttribute(key, false);
 
-			if (o != null && o instanceof Object[])
-				return true;
-		}
+		if (o != null && o instanceof Object[])
+			return true;
 
 		return false;
 	}
@@ -407,13 +368,11 @@ public abstract class AbstractElement implements Element {
 	 *             element.
 	 */
 	public boolean hasHash(String key) {
-		if (attributes != null) {
-			Object o = attributes.get(key);
+		Object o = internalGetAttribute(key, false);
 
-			if (o != null
-					&& (o instanceof HashMap<?, ?> || o instanceof CompoundAttribute))
-				return true;
-		}
+		if (o != null
+				&& (o instanceof HashMap<?, ?> || o instanceof CompoundAttribute))
+			return true;
 
 		return false;
 	}
@@ -431,11 +390,12 @@ public abstract class AbstractElement implements Element {
 
 		return Collections.emptySet();
 	}
-	
+
 	public Collection<String> getAttributeKeySet() {
 		if (attributes != null)
-			return (Collection<String>) Collections.unmodifiableCollection(attributes.keySet());
-		
+			return (Collection<String>) Collections
+					.unmodifiableCollection(attributes.keySet());
+
 		return Collections.emptySet();
 	}
 
@@ -482,6 +442,9 @@ public abstract class AbstractElement implements Element {
 				String key = keys.next();
 				Object val = vals.next();
 
+				if (val instanceof DynamicValue<?>)
+					val = ((DynamicValue<?>) val).get();
+
 				attributeChanged(sourceId, timeId, key,
 						AttributeChangeEvent.REMOVE, val, null);
 			}
@@ -498,6 +461,7 @@ public abstract class AbstractElement implements Element {
 		addAttribute_(myGraphId(), newEvent(), attribute, values);
 	}
 
+	@SuppressWarnings("unchecked")
 	protected void addAttribute_(String sourceId, long timeId,
 			String attribute, Object... values) {
 		if (attributes == null)
@@ -505,6 +469,8 @@ public abstract class AbstractElement implements Element {
 
 		Object old_value = attributes.get(attribute);
 		Object value;
+		boolean dynamic = false;
+		boolean oldDynamic = false;
 
 		if (values.length == 0)
 			value = true;
@@ -513,12 +479,30 @@ public abstract class AbstractElement implements Element {
 		else
 			value = values;
 
+		if (value != null && value instanceof DynamicValue)
+			dynamic = true;
+
+		if (old_value != null && old_value instanceof DynamicValue<?>)
+			oldDynamic = true;
+
 		AttributeChangeEvent event = AttributeChangeEvent.ADD;
 
-		if (attributes.containsKey(attribute)) // In case the value is null,
+		if (attributes.containsKey(attribute)) {// In case the value is null,
 			event = AttributeChangeEvent.CHANGE; // but the attribute exists.
 
-		attributes.put(attribute, value);
+			if (!dynamic && oldDynamic) 
+				((DynamicValue<Object>) old_value).set(value);
+			else
+				attributes.put(attribute, value);
+		} else 
+			attributes.put(attribute, value);
+
+		if (dynamic)
+			value = ((DynamicValue<?>) value).get();
+
+		if (oldDynamic)
+			old_value = ((DynamicValue<?>) old_value).get();
+
 		attributeChanged(sourceId, timeId, attribute, event, old_value, value);
 	}
 
@@ -580,7 +564,7 @@ public abstract class AbstractElement implements Element {
 			String attribute) {
 		if (attributes != null) {
 			if (attributes.containsKey(attribute)) // Avoid recursive calls when
-													// synchronising graphs.
+			// synchronising graphs.
 			{
 				attributes.remove(attribute);
 				attributeChanged(sourceId, timeId, attribute,
