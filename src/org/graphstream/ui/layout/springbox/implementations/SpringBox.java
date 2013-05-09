@@ -31,11 +31,10 @@
  */
 package org.graphstream.ui.layout.springbox.implementations;
 
-import java.util.Random;
-
 import org.graphstream.ui.layout.LayoutRunner;
 import org.graphstream.ui.layout.springbox.BarnesHutLayout;
 import org.graphstream.ui.layout.springbox.NodeParticle;
+import org.graphstream.util.MersenneTwister;
 
 /**
  * The GraphStream Spring-Box layout.
@@ -84,7 +83,7 @@ public class SpringBox extends BarnesHutLayout {
 	 *            If true the simulation dimensions count is 3 else 2.
 	 */
 	public SpringBox(boolean is3D) {
-		this(is3D, new Random(System.currentTimeMillis()));
+		this(is3D, new MersenneTwister(System.currentTimeMillis()));
 	}
 
 	/**
@@ -95,7 +94,7 @@ public class SpringBox extends BarnesHutLayout {
 	 * @param randomNumberGenerator
 	 *            The random number generator to use.
 	 */
-	public SpringBox(boolean is3D, Random randomNumberGenerator) {
+	public SpringBox(boolean is3D, MersenneTwister randomNumberGenerator) {
 		super(is3D, randomNumberGenerator);
 		setQuality(0.1);
 	}

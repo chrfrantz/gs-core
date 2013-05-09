@@ -35,14 +35,13 @@ import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.Locale;
-import java.util.Random;
-
 import org.graphstream.stream.Sink;
 import org.graphstream.stream.SourceBase;
 import org.graphstream.stream.sync.SinkTime;
 import org.graphstream.ui.geom.Point3;
 import org.graphstream.ui.graphicGraph.GraphPosLengthUtils;
 import org.graphstream.ui.layout.Layout;
+import org.graphstream.util.MersenneTwister;
 import org.miv.pherd.ParticleBox;
 import org.miv.pherd.ParticleBoxListener;
 import org.miv.pherd.ntree.Anchor;
@@ -125,7 +124,7 @@ public abstract class BarnesHutLayout extends SourceBase implements Layout,
 	/**
 	 * Random number generator.
 	 */
-	protected Random random;
+	protected MersenneTwister random;
 
 	/**
 	 * The lowest node position.
@@ -269,7 +268,7 @@ public abstract class BarnesHutLayout extends SourceBase implements Layout,
 	 *            If true the simulation dimensions count is 3 else 2.
 	 */
 	public BarnesHutLayout(boolean is3D) {
-		this(is3D, new Random(System.currentTimeMillis()));
+		this(is3D, new MersenneTwister(System.currentTimeMillis()));
 	}
 
 	/**
@@ -280,7 +279,7 @@ public abstract class BarnesHutLayout extends SourceBase implements Layout,
 	 * @param randomNumberGenerator
 	 *            The random number generator to use.
 	 */
-	public BarnesHutLayout(boolean is3D, Random randomNumberGenerator) {
+	public BarnesHutLayout(boolean is3D, MersenneTwister randomNumberGenerator) {
 		CellSpace space;
 
 		this.is3D = is3D;
@@ -388,7 +387,7 @@ public abstract class BarnesHutLayout extends SourceBase implements Layout,
 		return force;
 	}
 
-	public Random getRandom() {
+	public MersenneTwister getRandom() {
 		return random;
 	}
 

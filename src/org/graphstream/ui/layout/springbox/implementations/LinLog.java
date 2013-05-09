@@ -31,10 +31,9 @@
  */
 package org.graphstream.ui.layout.springbox.implementations;
 
-import java.util.Random;
-
 import org.graphstream.ui.layout.springbox.BarnesHutLayout;
 import org.graphstream.ui.layout.springbox.NodeParticle;
+import org.graphstream.util.MersenneTwister;
 
 public class LinLog extends BarnesHutLayout {
 	protected double k = 1;
@@ -73,7 +72,7 @@ public class LinLog extends BarnesHutLayout {
 	 *            If true the simulation dimensions count is 3 else 2.
 	 */
 	public LinLog(boolean is3D) {
-		this(is3D, new Random(System.currentTimeMillis()));
+		this(is3D, new MersenneTwister(System.currentTimeMillis()));
 	}
 
 	/**
@@ -84,7 +83,7 @@ public class LinLog extends BarnesHutLayout {
 	 * @param randomNumberGenerator
 	 *            The random number generator to use.
 	 */
-	public LinLog(boolean is3D, Random randomNumberGenerator) {
+	public LinLog(boolean is3D, MersenneTwister randomNumberGenerator) {
 		super(is3D, randomNumberGenerator);
 		setQuality(1);
 		force = 3;
